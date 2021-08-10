@@ -36,6 +36,7 @@ struct TextBlock {
     int angleIndex;
     float angleScore;
     double angleTime;
+    int angleDegree;
     std::string text;
     std::vector<float> charScores;
     double crnnTime;

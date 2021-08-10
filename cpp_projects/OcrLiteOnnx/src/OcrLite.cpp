@@ -1,6 +1,7 @@
 #include "OcrLite.h"
 #include "OcrUtils.h"
 #include <stdarg.h> //windows&linux
+#include <cstdio>
 
 OcrLite::OcrLite() {}
 
@@ -134,7 +135,8 @@ OcrResult OcrLite::detect(const char *path, const char *imgName,
                textBoxes[i].boxPoint[0].x, textBoxes[i].boxPoint[0].y,
                textBoxes[i].boxPoint[1].x, textBoxes[i].boxPoint[1].y,
                textBoxes[i].boxPoint[2].x, textBoxes[i].boxPoint[2].y,
-               textBoxes[i].boxPoint[3].x, textBoxes[i].boxPoint[3].y);
+               textBoxes[i].boxPoint[3].x, textBoxes[i].boxPoint[3].y
+               );
     }
 
     Logger("---------- step: drawTextBoxes ----------\n");
@@ -152,6 +154,8 @@ OcrResult OcrLite::detect(const char *path, const char *imgName,
         Logger("angle[%d][index(%d), score(%f), time(%fms)]\n", i, angles[i].index, angles[i].score, angles[i].time);
     }
 
+    Logger("---------- step: crnnNet getTextLine ----------\n");
+
     //Rotate partImgs
     for (unsigned int i = 0; i < partImages.size(); ++i) {
         if (angles[i].index == 0) {
@@ -159,8 +163,9 @@ OcrResult OcrLite::detect(const char *path, const char *imgName,
         }
     }
 
-    Logger("---------- step: crnnNet getTextLine ----------\n");
     std::vector<TextLine> textLines = crnnNet.getTextLines(partImages, path, imgName);
+
+    int txt_score_low = 0;
     //Log TextLines
     for (unsigned int i = 0; i < textLines.size(); ++i) {
         Logger("textLine[%d](%s)\n", i, textLines[i].text.c_str());
@@ -176,6 +181,41 @@ OcrResult OcrLite::detect(const char *path, const char *imgName,
         Logger("crnnTime[%d](%fms)\n", i, textLines[i].time);
     }
 
+    std::vector<int> angleDeg;
+    for (unsigned int i = 0; i < textBoxes.size(); ++i) {
+        float x0 = textBoxes[i].boxPoint[0].x, y0 = textBoxes[i].boxPoint[0].y;
+        float x1 = textBoxes[i].boxPoint[1].x, y1 = textBoxes[i].boxPoint[1].y;
+        float x2 = textBoxes[i].boxPoint[3].x, y2 = textBoxes[i].boxPoint[3].y;
+
+        float l0_sq = (x0 - x1) * (x0 - x1) + (y0 - y1) * (y0 - y1);
+        float l1_sq = (x0 - x2) * (x0 - x2) + (y0 - y2) * (y0 - y2);
+        float deg0 = 180 / 3.1415926 * atan2(y1 - y0, x1 - x0) + 180;
+        float deg1 = 180 / 3.1415926 * atan2(y2 - y0, x2 - x0) + 180;
+
+        float deg = l0_sq > l1_sq ? deg0 : deg1;
+        int deg_int = 360 - (int)(deg + 0.5);
+
+        if (angles[i].index != 0) {
+            deg_int = (deg_int + 180) % 360;
+        }
+        if (textLines[i].text.length() < 2)
+            continue;
+
+        //float score = 0;
+        //for (unsigned int j = 0; j < textLines[i].charScores.size(); j++) {
+            //score += textLines[i].charScores[j];
+        //}
+        //score /= textLines[i].charScores.size();
+
+        if (textLines[i].charScores[0] < 0.8 && textLines[i].charScores[1] < 0.8) {
+            deg_int = (deg_int + 180) % 360;
+        }
+
+        Logger("Angle: %d (%.0f, %.0f, %.0f, %.0f) \n", deg_int, deg0, deg1, l0_sq, l1_sq);
+        printf("Angle: %d\n", deg_int);
+        angleDeg.emplace_back(deg_int);
+    }
+
     std::vector<TextBlock> textBlocks;
     for (unsigned int i = 0; i < textLines.size(); ++i) {
         std::vector<cv::Point> boxPoint = std::vector<cv::Point>(4);
@@ -185,7 +225,7 @@ OcrResult OcrLite::detect(const char *path, const char *imgName,
         boxPoint[2] = cv::Point(textBoxes[i].boxPoint[2].x - padding, textBoxes[i].boxPoint[2].y - padding);
         boxPoint[3] = cv::Point(textBoxes[i].boxPoint[3].x - padding, textBoxes[i].boxPoint[3].y - padding);
         TextBlock textBlock{boxPoint, textBoxes[i].score, angles[i].index, angles[i].score,
-                            angles[i].time, textLines[i].text, textLines[i].charScores, textLines[i].time,
+                            angles[i].time, angleDeg[i], textLines[i].text, textLines[i].charScores, textLines[i].time,
                             angles[i].time + textLines[i].time};
         textBlocks.emplace_back(textBlock);
     }
