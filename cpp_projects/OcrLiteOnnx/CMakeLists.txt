@@ -52,7 +52,11 @@ if (OCR_STATIC)
 else ()
     set(OnnxRuntime_DIR "${CMAKE_CURRENT_SOURCE_DIR}/onnxruntime-shared")
 endif ()
+message(STATUS "OnnxRuntime_DIR: ${OnnxRuntime_DIR}")
+#include(${OnnxRuntime_DIR}/OnnxRuntimeWrapper.cmake)
+
 find_package(OnnxRuntime REQUIRED)
+
 if (OnnxRuntime_FOUND)
     message(STATUS "OnnxRuntime_LIBS: ${OnnxRuntime_LIBS}")
     message(STATUS "OnnxRuntime_INCLUDE_DIRS: ${OnnxRuntime_INCLUDE_DIRS}")
