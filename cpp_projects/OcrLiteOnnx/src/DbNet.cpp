@@ -48,7 +48,7 @@ std::vector<TextBox> findRsBoxes(const cv::Mat &fMapMat, const cv::Mat &norfMapM
     rsBoxes.clear();
     std::vector<std::vector<cv::Point>> contours;
     findContours(norfMapMat, contours, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
-    for (int i = 0; i < contours.size(); ++i) {
+    for (unsigned int i = 0; i < contours.size(); ++i) {
         float minSideLen, perimeter;
         std::vector<cv::Point> minBox = getMinBoxes(contours[i], minSideLen, perimeter);
         if (minSideLen < minArea)
@@ -64,7 +64,7 @@ std::vector<TextBox> findRsBoxes(const cv::Mat &fMapMat, const cv::Mat &norfMapM
         if (minSideLen < minArea + 2)
             continue;
 
-        for (int j = 0; j < clipMinBox.size(); ++j) {
+        for (unsigned int j = 0; j < clipMinBox.size(); ++j) {
             clipMinBox[j].x = (clipMinBox[j].x / s.ratioWidth);
             clipMinBox[j].x = (std::min)((std::max)(clipMinBox[j].x, 0), s.srcWidth);
 

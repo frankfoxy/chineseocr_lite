@@ -45,7 +45,7 @@ void AngleNet::initModel(const std::string &pathStr) {
 Angle scoreToAngle(const std::vector<float> &outputData) {
     int maxIndex = 0;
     float maxScore = -1000.0f;
-    for (int i = 0; i < outputData.size(); i++) {
+    for (unsigned int i = 0; i < outputData.size(); i++) {
         if (i == 0)maxScore = outputData[i];
         else if (outputData[i] > maxScore) {
             maxScore = outputData[i];
@@ -122,7 +122,7 @@ std::vector<Angle> AngleNet::getAngles(std::vector<cv::Mat> &partImgs, const cha
             mostAngleIndex = 1;
         }
         printf("Set All Angle to mostAngleIndex(%d)\n", mostAngleIndex);
-        for (int i = 0; i < angles.size(); ++i) {
+        for (unsigned int i = 0; i < angles.size(); ++i) {
             Angle angle = angles[i];
             angle.index = mostAngleIndex;
             angles.at(i) = angle;

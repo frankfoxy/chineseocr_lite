@@ -175,8 +175,8 @@ static int _getopt_(int argc, char *const argv[],
                                 argv[0], c);
                     }
                     if (optstring[0] == ':' ||
-                        (optstring[0] == '-' || optstring[0] == '+') &&
-                        optstring[1] == ':') {
+                            ((optstring[0] == '-' || optstring[0] == '+') &&
+                             (optstring[1] == ':'))) {
                         c = ':';
                     } else {
                         c = '?';

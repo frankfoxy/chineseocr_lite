@@ -1,6 +1,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <numeric>
+#include <iostream>
 #include "OcrUtils.h"
 #include "clipper.hpp"
 
@@ -79,7 +80,7 @@ int getThickness(cv::Mat &boxImg) {
 void drawTextBox(cv::Mat &boxImg, cv::RotatedRect &rect, int thickness) {
     cv::Point2f vertices[4];
     rect.points(vertices);
-    for (int i = 0; i < 4; i++)
+    for (unsigned int i = 0; i < 4; i++)
         cv::line(boxImg, vertices[i], vertices[(i + 1) % 4], cv::Scalar(0, 0, 255), thickness);
     //cv::polylines(srcmat, textpoint, true, cv::Scalar(0, 255, 0), 2);
 }
@@ -93,7 +94,7 @@ void drawTextBox(cv::Mat &boxImg, const std::vector<cv::Point> &box, int thickne
 }
 
 void drawTextBoxes(cv::Mat &boxImg, std::vector<TextBox> &textBoxes, int thickness) {
-    for (int i = 0; i < textBoxes.size(); ++i) {
+    for (unsigned int i = 0; i < textBoxes.size(); ++i) {
         drawTextBox(boxImg, textBoxes[i].boxPoint, thickness);
     }
 }
@@ -125,7 +126,7 @@ cv::Mat getRotateCropImage(const cv::Mat &src, std::vector<cv::Point> box) {
     cv::Mat imgCrop;
     image(cv::Rect(left, top, right - left, bottom - top)).copyTo(imgCrop);
 
-    for (int i = 0; i < points.size(); i++) {
+    for (unsigned int i = 0; i < points.size(); i++) {
         points[i].x -= left;
         points[i].y -= top;
     }
@@ -171,8 +172,9 @@ cv::Mat adjustTargetImg(cv::Mat &src, int dstWidth, int dstHeight) {
     cv::resize(src, srcResize, cv::Size(angleWidth, dstHeight));
     cv::Mat srcFit = cv::Mat(dstHeight, dstWidth, CV_8UC3, cv::Scalar(255, 255, 255));
     if (angleWidth < dstWidth) {
-        cv::Rect rect(0, 0, srcResize.cols, srcResize.rows);
-        srcResize.copyTo(srcFit(rect));
+        //cv::Rect rect(0, 0, srcResize.cols, srcResize.rows);
+        //srcResize.copyTo(srcFit(rect));
+        cv::copyMakeBorder(srcResize, srcFit, 0, 0, 0, dstWidth - angleWidth, cv::BORDER_ISOLATED, cv::Scalar(255,255,255));
     } else {
         cv::Rect rect(0, 0, dstWidth, dstHeight);
         srcResize(rect).copyTo(srcFit);
@@ -192,7 +194,7 @@ std::vector<cv::Point> getMinBoxes(const std::vector<cv::Point> &inVec, float &m
 
     float *p1 = (float *) boxPoints2f.data;
     std::vector<cv::Point> tmpVec;
-    for (int i = 0; i < 4; ++i, p1 += 2) {
+    for (unsigned int i = 0; i < 4; ++i, p1 += 2) {
         tmpVec.emplace_back(int(p1[0]), int(p1[1]));
     }
 
@@ -235,7 +237,7 @@ float boxScoreFast(const cv::Mat &inMat, const std::vector<cv::Point> &inBox) {
     int width = inMat.cols;
     int height = inMat.rows;
     int maxX = -1, minX = 1000000, maxY = -1, minY = 1000000;
-    for (int i = 0; i < box.size(); ++i) {
+    for (unsigned int i = 0; i < box.size(); ++i) {
         if (maxX < box[i].x)
             maxX = box[i].x;
         if (minX > box[i].x)
@@ -250,7 +252,7 @@ float boxScoreFast(const cv::Mat &inMat, const std::vector<cv::Point> &inBox) {
     maxY = (std::min)((std::max)(maxY, 0), height - 1);
     minY = (std::max)((std::min)(minY, height - 1), 0);
 
-    for (int i = 0; i < box.size(); ++i) {
+    for (unsigned int i = 0; i < box.size(); ++i) {
         box[i].x = box[i].x - minX;
         box[i].y = box[i].y - minY;
     }
@@ -278,7 +280,7 @@ std::vector<cv::Point> unClip(const std::vector<cv::Point> &inBox, float perimet
     std::vector<cv::Point> outBox;
     ClipperLib::Path poly;
 
-    for (int i = 0; i < inBox.size(); ++i) {
+    for (unsigned int i = 0; i < inBox.size(); ++i) {
         poly.push_back(ClipperLib::IntPoint(inBox[i].x, inBox[i].y));
     }
 
@@ -292,9 +294,9 @@ std::vector<cv::Point> unClip(const std::vector<cv::Point> &inBox, float perimet
 
     outBox.clear();
     std::vector<cv::Point> rsVec;
-    for (int i = 0; i < polys.size(); ++i) {
+    for (unsigned int i = 0; i < polys.size(); ++i) {
         ClipperLib::Path tmpPoly = polys[i];
-        for (int j = 0; j < tmpPoly.size(); ++j) {
+        for (unsigned int j = 0; j < tmpPoly.size(); ++j) {
             outBox.emplace_back(tmpPoly[j].X, tmpPoly[j].Y);
         }
     }
@@ -313,13 +315,21 @@ std::vector<float> substractMeanNormalize(cv::Mat &src, const float *meanVals, c
             inputTensorValues[ch * imageSize + pid] = data;
         }
     }
+    //int cnt = 0;
+    //for (auto i : inputTensorValues) {
+        //if (cnt ++ > 100) break;
+        //std::cout << i << " ";
+
+    //}
+    
+    //std::cout << std::endl;
     return inputTensorValues;
 }
 
 std::vector<int> getAngleIndexes(std::vector<Angle> &angles) {
     std::vector<int> angleIndexes;
     angleIndexes.reserve(angles.size());
-    for (int i = 0; i < angles.size(); ++i) {
+    for (unsigned int i = 0; i < angles.size(); ++i) {
         angleIndexes.push_back(angles[i].index);
     }
     return angleIndexes;
@@ -333,7 +343,7 @@ std::vector<char *> getInputNames(Ort::Session *session) {
 
     //printf("Number of inputs = %zu\n", numInputNodes);
 
-    for (int i = 0; i < numInputNodes; i++) {
+    for (unsigned int i = 0; i < numInputNodes; i++) {
         // print input node names
         char *inputName = session->GetInputName(i, allocator);
         printf("InputName[%d]=%s\n", i, inputName);
@@ -349,7 +359,7 @@ std::vector<char *> getInputNames(Ort::Session *session) {
         // print input shapes/dims
         //inputNodeDims = tensorInfo.GetShape();
         //printf("Input[%d] num_dims=%zu\n", i, inputNodeDims.size());
-        /*for (int j = 0; j < inputNodeDims.size(); j++)
+        /*for (unsigned int j = 0; j < inputNodeDims.size(); j++)
             printf("Input[%d] dim%d=%jd\n", i, j, inputNodeDims[j]);*/
     }
     return inputNodeNames;
@@ -363,7 +373,7 @@ std::vector<char *> getOutputNames(Ort::Session *session) {
 
     //printf("Number of outputs = %zu\n", numOutputNodes);
 
-    for (int i = 0; i < numOutputNodes; i++) {
+    for (unsigned int i = 0; i < numOutputNodes; i++) {
         // print input node names
         char *outputName = session->GetOutputName(i, allocator);
         printf("OutputName[%d]=%s\n", i, outputName);
@@ -379,7 +389,7 @@ std::vector<char *> getOutputNames(Ort::Session *session) {
         // print input shapes/dims
         //outputNodeDims = tensorInfo.GetShape();
         //printf("Output %d : num_dims=%zu\n", i, outputNodeDims.size());
-        /*for (int j = 0; j < outputNodeDims.size(); j++)
+        /*for (unsigned int j = 0; j < outputNodeDims.size(); j++)
             printf("Output %d : dim %d=%jd\n", i, j, outputNodeDims[j]);*/
     }
     return outputNodeNames;
